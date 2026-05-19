@@ -1,12 +1,16 @@
 package com.medcompare.backend.controller;
-
+import java.util.Map;
 import com.medcompare.backend.entity.Medicine;
 import com.medcompare.backend.repository.MedicineRepository;
 import com.medcompare.backend.service.MedicineService;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import com.medcompare.backend.service.AlertService;   
+import java.util.stream.Stream;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 @CrossOrigin(origins = "*")
 
@@ -17,6 +21,10 @@ public class MedicineController {
     private final MedicineService medicineService;
     @Autowired
     private MedicineRepository medicineRepository;
+    @Autowired
+    private AlertService alertService;              // ← ADD THIS
+
+
     public MedicineController(MedicineService medicineService) {
         this.medicineService = medicineService;
     }
@@ -25,10 +33,10 @@ public class MedicineController {
     public List<Medicine> getAllMedicines() {
         return medicineService.getAllMedicines();
     }
-@GetMapping("/category/{category}")
-public List<Medicine> getByCategory(@PathVariable String category) {
+    @GetMapping("/category/{category}")
+    public List<Medicine> getByCategory(@PathVariable String category) {
     return medicineService.getByCategory(category);
-}
+    }
 
     @PostMapping
     public Medicine addMedicine(@RequestBody Medicine medicine) {
@@ -43,16 +51,12 @@ public List<Medicine> getByCategory(@PathVariable String category) {
 public List<Medicine> search(@RequestParam String name) {
     return medicineService.searchMedicine(name);
 }
-    // @PutMapping("/{id}")
-    // public Medicine updateMedicine(@PathVariable Long id, @RequestBody Medicine medicine) {
-    //     return medicineService.updateMedicine(id, medicine);
-    // }
+   
     @PutMapping("/{id}")
     public Medicine updateMedicine(@PathVariable Long id, @RequestBody Medicine updatedMedicine) {
     Medicine existing = medicineRepository.findById(id)
     .orElseThrow(() -> new RuntimeException("Medicine not found"));
     existing.setName(updatedMedicine.getName());
-    existing.setPrice(updatedMedicine.getPrice());
     existing.setCategory(updatedMedicine.getCategory());
     existing.setImageUrl(updatedMedicine.getImageUrl());
 
@@ -60,14 +64,27 @@ public List<Medicine> search(@RequestParam String name) {
     existing.setOnemgUrl(updatedMedicine.getOnemgUrl());
 
 
-existing.setApolloPrice(updatedMedicine.getApolloPrice());
+    existing.setApolloPrice(updatedMedicine.getApolloPrice());
     existing.setApolloUrl(updatedMedicine.getApolloUrl());
 
     existing.setPharmeasyPrice(updatedMedicine.getPharmeasyPrice());
     existing.setPharmeasyUrl(updatedMedicine.getPharmeasyUrl());
 
 
-    return medicineRepository.save(existing);
+            Medicine saved = medicineRepository.save(existing);
+
+        double newLowest = Stream.of(
+                saved.getApolloPrice(),
+                saved.getOnemgPrice(),
+                saved.getPharmeasyPrice()
+            )
+            .filter(p -> p != null && p > 0)
+            .mapToDouble(Double::doubleValue)
+            .min().orElse(0.0);
+        alertService.checkAndSendAlerts(id, saved.getName(), newLowest);
+
+        return saved;
+
     }
 
     @DeleteMapping("/{id}")
@@ -75,4 +92,22 @@ existing.setApolloPrice(updatedMedicine.getApolloPrice());
         medicineService.deleteMedicine(id);
         return "Medicine deleted successfully";
     }
+    
+
+    @PutMapping("/{id}/prices")
+    public ResponseEntity<Medicine> updatePrices(
+      @PathVariable Long id,
+      @RequestBody Map<String, Double> prices) {
+
+      Medicine med = medicineRepository.findById(id)
+        .orElseThrow(() -> new RuntimeException("Medicine not found"));
+
+      med.setOnemgPrice(prices.get("onemgPrice"));
+      med.setApolloPrice(prices.get("apolloPrice"));
+      med.setPharmeasyPrice(prices.get("pharmeasyPrice"));
+      med.setPriceUpdatedAt(LocalDateTime.now());
+
+    return ResponseEntity.ok(medicineRepository.save(med));
+    }
+
 }

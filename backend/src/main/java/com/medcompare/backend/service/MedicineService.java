@@ -37,7 +37,6 @@ public class MedicineService {
     public Medicine updateMedicine(Long id, Medicine updatedMedicine) {
         Medicine existing = getMedicineById(id);
         existing.setName(updatedMedicine.getName());
-        existing.setPrice(updatedMedicine.getPrice());
         return medicineRepository.save(existing);
     }
 

@@ -1,4 +1,5 @@
 package com.medcompare.backend.entity;
+import java.time.LocalDateTime;
 
 
 import jakarta.persistence.*;
@@ -18,12 +19,19 @@ public class Medicine {
 
     private Double pharmeasyPrice;
     private String pharmeasyUrl;
+    @Column
+private LocalDateTime priceUpdatedAt;
 
+// Add getter and setter:
+public LocalDateTime getPriceUpdatedAt() { return priceUpdatedAt; }
+public void setPriceUpdatedAt(LocalDateTime priceUpdatedAt) { this.priceUpdatedAt = priceUpdatedAt; }
+   
+@Column(name = "description")
+    private String desc;
     @Column(nullable = false)
     private String name;
-    private double price; 
     private String imageUrl;
-    
+
     public Double getOnemgPrice() {
         return onemgPrice;
     }
@@ -34,6 +42,14 @@ public class Medicine {
 
     public String getOnemgUrl() {
         return onemgUrl;
+    }
+
+    public String getDesc() {
+        return desc;
+    }
+
+    public void setDesc(String desc) {
+        this.desc = desc;
     }
 
     public void setOnemgUrl(String onemgUrl) {
@@ -73,27 +89,29 @@ public class Medicine {
     }
 
     // Constructors
-    public Medicine() {}
-
-    public Medicine(String name , double price) {
-        this.name = name;
-        this.price = price;
+    public Medicine() {
     }
 
-public String getImageUrl() {
-    return imageUrl;
-}
+    public Medicine(String name ) {
+        this.name = name;
+    }
 
-public void setImageUrl(String imageUrl) {
-    this.imageUrl = imageUrl;
-}
-  public String getCategory() {
-    return category;
-}
+    public String getImageUrl() {
+        return imageUrl;
+    }
 
-public void setCategory(String category) {
-    this.category = category;
-}
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
     // Getters and Setters
     public Long getId() {
         return id;
@@ -110,11 +128,4 @@ public void setCategory(String category) {
     public void setName(String name) {
         this.name = name;
     }
-    public double getPrice() {  
-        return price;
-    }
-    public void setPrice(double price) {  
-        this.price = price;
-    }
-
 }

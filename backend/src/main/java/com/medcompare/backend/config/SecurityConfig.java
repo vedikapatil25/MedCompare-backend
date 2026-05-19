@@ -2,7 +2,7 @@ package com.medcompare.backend.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -36,6 +36,10 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
         .csrf(csrf -> csrf.disable())
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/api/users/login", "/api/users/register").permitAll()
+            .requestMatchers("/images/**").permitAll()
+            // .requestMatchers(HttpMethod.GET, "/api/medicines/**").permitAll()
+            // .requestMatchers(HttpMethod.POST, "/api/medicines/**").hasAuthority("ADMIN")
+            .requestMatchers("/api/medicines/**").permitAll()   // for addig  medicines
             .requestMatchers("/api/users/admin/**").hasAuthority("ADMIN")
             // .requestMatchers("/api/users/admin/**").permitAll()
             .anyRequest().authenticated()

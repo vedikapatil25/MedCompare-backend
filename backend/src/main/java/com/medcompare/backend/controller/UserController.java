@@ -75,4 +75,10 @@ public AuthResponse login(@RequestBody user user) {
 public List<user> getAllUsers() {
     return userRepository.findAll();
 }
+@DeleteMapping("/admin/users/{id}")
+public String deleteUser(@PathVariable Long id) {
+    userRepository.deleteById(id);
+    return "User deleted successfully";
+}
+
 }
