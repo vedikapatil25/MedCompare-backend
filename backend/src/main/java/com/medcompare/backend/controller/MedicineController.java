@@ -6,7 +6,7 @@ import com.medcompare.backend.service.MedicineService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import com.medcompare.backend.service.AlertService;   
+import com.medcompare.backend.service.PriceAlertService;   
 import java.util.stream.Stream;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,7 +22,7 @@ public class MedicineController {
     @Autowired
     private MedicineRepository medicineRepository;
     @Autowired
-    private AlertService alertService;              // ← ADD THIS
+    private PriceAlertService alertService;             
 
 
     public MedicineController(MedicineService medicineService) {
@@ -96,18 +96,31 @@ public List<Medicine> search(@RequestParam String name) {
 
     @PutMapping("/{id}/prices")
     public ResponseEntity<Medicine> updatePrices(
-      @PathVariable Long id,
-      @RequestBody Map<String, Double> prices) {
+    @PathVariable Long id,
+    @RequestBody Map<String, Double> prices) {
 
-      Medicine med = medicineRepository.findById(id)
+    Medicine med = medicineRepository.findById(id)
         .orElseThrow(() -> new RuntimeException("Medicine not found"));
 
-      med.setOnemgPrice(prices.get("onemgPrice"));
-      med.setApolloPrice(prices.get("apolloPrice"));
-      med.setPharmeasyPrice(prices.get("pharmeasyPrice"));
-      med.setPriceUpdatedAt(LocalDateTime.now());
+    med.setOnemgPrice(prices.get("onemgPrice"));
+    med.setApolloPrice(prices.get("apolloPrice"));
+    med.setPharmeasyPrice(prices.get("pharmeasyPrice"));
+    med.setPriceUpdatedAt(LocalDateTime.now());
 
-    return ResponseEntity.ok(medicineRepository.save(med));
-    }
+    Medicine saved = medicineRepository.save(med);
 
+    // ✅ Add this — trigger price drop alerts
+    double newLowest = Stream.of(
+            saved.getApolloPrice(),
+            saved.getOnemgPrice(),
+            saved.getPharmeasyPrice()
+        )
+        .filter(p -> p != null && p > 0)
+        .mapToDouble(Double::doubleValue)
+        .min().orElse(0.0);
+
+    alertService.checkAndSendAlerts(id, saved.getName(), newLowest);
+
+    return ResponseEntity.ok(saved);
+}
 }

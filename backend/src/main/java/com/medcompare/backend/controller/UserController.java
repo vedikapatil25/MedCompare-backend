@@ -3,6 +3,7 @@ package com.medcompare.backend.controller;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,7 +25,38 @@ public class UserController {
  
     @Autowired
     private UserRepository userRepository;
+// Request DTOs (add as inner classes or separate files)
+static class ForgotPasswordRequest {
+    public String email;
+}
 
+static class ResetPasswordRequest {
+    public String token;
+    public String newPassword;
+}
+
+// ---- FORGOT PASSWORD ENDPOINT ----
+@PostMapping("/forgot-password")
+public ResponseEntity<String> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+    try {
+        userService.forgotPassword(request.email);
+        return ResponseEntity.ok("Reset link sent to your email.");
+    } catch (Exception e) {
+        // Always return 200 — don't reveal if email exists
+        return ResponseEntity.ok("If this email is registered, a reset link has been sent.");
+    }
+}
+
+// ---- RESET PASSWORD ENDPOINT ----
+@PostMapping("/reset-password")
+public ResponseEntity<String> resetPassword(@RequestBody ResetPasswordRequest request) {
+    try {
+        userService.resetPassword(request.token, request.newPassword);
+        return ResponseEntity.ok("Password reset successful.");
+    } catch (RuntimeException e) {
+        return ResponseEntity.badRequest().body(e.getMessage());
+    }
+}
     @PostMapping("/register")
     public Map<String, String> register(@RequestBody user user) {
         userService.register(user);

@@ -1,12 +1,10 @@
 package com.medcompare.backend.service;
 
-import jakarta.mail.internet.MimeMessage;
-
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
-
 
 @Service
 public class EmailService {
@@ -14,63 +12,51 @@ public class EmailService {
     @Autowired
     private JavaMailSender mailSender;
 
-    public void sendPriceDropEmail(String toEmail, String userName,
-                                   String medicineName,
-                                   Double oldPrice, Double newPrice) {
-        try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true);
+    @Value("${spring.mail.username}")
+    private String fromEmail;
 
-            helper.setFrom("yourgmail@gmail.com");
-            helper.setTo(toEmail);
-            helper.setSubject("Price Drop Alert: " + medicineName + " is now cheaper!");
+    @Value("${app.base-url}")
+    private String baseUrl;
 
-            double savings = oldPrice - newPrice;
+    public void sendPasswordResetEmail(String toEmail, String token) {
+        String resetLink = baseUrl + "/reset-password.html?token=" + token;
 
-            String html = """
-                <div style="font-family:Arial,sans-serif;max-width:500px;margin:auto;
-                            padding:20px;border:1px solid #eee;border-radius:10px;">
-                    <h2 style="color:#1a5c32;">Price dropped! 🎉</h2>
-                    <p>Hi %s,</p>
-                    <p>Good news! <strong>%s</strong> that you were watching has dropped in price.</p>
-                    <table style="width:100%%;border-collapse:collapse;margin:16px 0;">
-                        <tr>
-                            <td style="padding:8px;color:gray;">Your subscribed price</td>
-                            <td style="padding:8px;"><s>₹%.2f</s></td>
-                        </tr>
-                        <tr>
-                            <td style="padding:8px;color:gray;">New lowest price</td>
-                            <td style="padding:8px;color:#1a5c32;font-weight:bold;font-size:18px;">
-                                ₹%.2f
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding:8px;color:gray;">You save</td>
-                            <td style="padding:8px;color:green;font-weight:bold;">₹%.2f</td>
-                        </tr>
-                    </table>
-                    <a href="http://yourwebsite.com"
-                       style="display:inline-block;background:#1a5c32;color:white;
-                              padding:10px 20px;border-radius:6px;text-decoration:none;">
-                        View Price Comparison →
-                    </a>
-                    <p style="margin-top:20px;font-size:12px;color:gray;">
-                        You received this because you set a price alert on our platform.
-                    </p>
-                </div>
-            """.formatted(
-                userName != null ? userName : "there",
-                medicineName,
-                oldPrice,
-                newPrice,
-                savings
-            );
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromEmail);
+        message.setTo(toEmail);
+        message.setSubject("MedCompare - Reset Your Password");
+        message.setText(
+            "Hello,\n\n" +
+            "You requested a password reset for your MedCompare account.\n\n" +
+            "Click the link below to reset your password:\n" +
+            resetLink + "\n\n" +
+            "This link will expire in 15 minutes.\n\n" +
+            "If you did not request this, please ignore this email.\n\n" +
+            "— MedCompare Team"
+        );
 
-            helper.setText(html, true); // true = HTML
-            mailSender.send(message);
-
-        } catch (Exception e) {
-            System.err.println("Email send failed: " + e.getMessage());
-        }
+        mailSender.send(message);
     }
+    // ---- PRICE DROP ALERT EMAIL ----
+    public void sendPriceDropEmail(String toEmail, String medicineName,
+                                    double oldPrice, double newPrice) {
+        double savings = oldPrice - newPrice;
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromEmail);
+        message.setTo(toEmail);
+        message.setSubject("💊 Price Drop Alert - " + medicineName);
+        message.setText(
+            "Good news!\n\n" +
+            "The price of " + medicineName + " has dropped!\n\n" +
+            "Old Price : ₹" + oldPrice + "\n" +
+            "New Price : ₹" + newPrice + "\n" +
+            "You Save  : ₹" + String.format("%.2f", savings) + "\n\n" +
+            "Visit MedCompare to buy at the best price.\n\n" +
+            "— MedCompare Team"
+        );
+
+        mailSender.send(message);
+    }
+
 }
