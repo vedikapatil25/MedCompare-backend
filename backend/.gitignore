@@ -38,3 +38,10 @@ application.properties
 **/application.properties
 backend/src/main/resources/application.properties
 src/main/resources/application.properties
+
+ Local properties
+**/application-local.properties
+application-local.properties
+*/application-local.properties
+backend/src/main/resources/application-local.properties
+src/main/resources/application-local.properties
